@@ -1,0 +1,106 @@
+name: build-windows-installer
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout installer repository
+        uses: actions/checkout@v4
+
+      - name: Checkout wallet alert source
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/KASignDag/zkas-wallet-bridge-alert.git source
+
+      - name: Prepare installer-specific source
+        shell: pwsh
+        run: |
+          Copy-Item source\app.py app.py
+          Copy-Item source\monitor.py monitor.py
+          New-Item -ItemType Directory -Force tests | Out-Null
+          Copy-Item source\tests\* tests\ -Recurse -Force
+
+          @'
+          from pathlib import Path
+
+          p = Path('app.py')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('import base64\n', 'import base64\nimport os\n', 1)
+          s = s.replace(
+              'DATA = ROOT / "data"',
+              'DATA = Path(os.environ.get("PROGRAMDATA", str(ROOT))) / "ZKasWalletBridgeAlertInstaller" / "data"'
+          )
+          s = s.replace('"port": 3041', '"port": 3042')
+          s = s.replace('http://127.0.0.1:3041', 'http://127.0.0.1:3042')
+          s = s.replace('ZKas Wallet Bridge Alert v0.1.0', 'ZKas Wallet Bridge Alert Installer v0.1.0')
+          p.write_text(s, encoding='utf-8')
+          '@ | python -
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run monitor tests
+        shell: pwsh
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: Install PyInstaller
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pyinstaller
+
+      - name: Build self-contained alert executable
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --onefile --name ZKasWalletBridgeAlert --hidden-import monitor app.py
+          if (-not (Test-Path dist\ZKasWalletBridgeAlert.exe)) { throw 'PyInstaller did not create the executable.' }
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build Windows setup executable
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw 'Inno Setup compiler was not found.' }
+          & $iscc installer\ZKasWalletBridgeAlert.iss
+          $setup = 'installer\output\ZKas-Wallet-Bridge-Alert-Setup.exe'
+          if (-not (Test-Path $setup)) { throw 'Installer executable was not created.' }
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  ZKas-Wallet-Bridge-Alert-Setup.exe" | Set-Content "$setup.sha256" -Encoding ascii
+          Write-Host "SHA-256: $hash"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZKas-Wallet-Bridge-Alert-Installer
+          path: |
+            installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe
+            installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe.sha256
+
+      - name: Publish tagged release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe
+            installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe.sha256
+          body: |
+            Plug-and-play Windows installer for ZKas Wallet Bridge Alert.
+
+            Download `ZKas-Wallet-Bridge-Alert-Setup.exe`, run it as prompted, and the alert will install, start monitoring the ZKas Desktop Wallet bridge at `127.0.0.1:18114`, and open the local dashboard at `127.0.0.1:3042`.
+
+            No separate Python installation is required.
