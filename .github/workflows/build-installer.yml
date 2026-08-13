@@ -3,9 +3,8 @@ name: build-windows-installer
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
-  push:
     tags: [ 'v*' ]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -22,6 +21,11 @@ jobs:
         shell: pwsh
         run: |
           git clone --depth 1 https://github.com/KASignDag/zkas-wallet-bridge-alert.git source
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Prepare installer-specific source
         shell: pwsh
@@ -46,11 +50,6 @@ jobs:
           s = s.replace('ZKas Wallet Bridge Alert v0.1.0', 'ZKas Wallet Bridge Alert Installer v0.1.0')
           p.write_text(s, encoding='utf-8')
           '@ | python -
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
 
       - name: Run monitor tests
         shell: pwsh
