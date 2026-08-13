@@ -26,9 +26,12 @@ No separate Python installation is required.
 ## Defaults
 
 - ZKas Desktop Wallet bridge telemetry: `http://127.0.0.1:18114`
-- Alert dashboard: `http://127.0.0.1:3041`
-- Install directory: `C:\Program Files\ZKas Wallet Bridge Alert`
-- Windows startup task: `ZKas Wallet Bridge Alert`
+- Plug-and-play alert dashboard: `http://127.0.0.1:3042`
+- Install directory: `C:\Program Files\ZKas Wallet Bridge Alert Installer`
+- Data directory: `%ProgramData%\ZKasWalletBridgeAlertInstaller\data`
+- Windows startup task: `ZKas Wallet Bridge Alert Installer`
+
+Port `3042` is intentionally different from the source/manual wallet-alert edition so both editions do not collide if they are ever present on the same PC.
 
 The alert is read-only. It does not need a seed phrase, private key, wallet spending permission, node-control access, or miner-control access.
 
