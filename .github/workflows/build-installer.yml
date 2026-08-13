@@ -90,10 +90,13 @@ jobs:
             installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe
             installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe.sha256
 
-      - name: Publish tagged release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish v0.1.0 release
+        if: startsWith(github.ref, 'refs/tags/') || hashFiles('RELEASE_V0.1.0') != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.0' }}
+          target_commitish: ${{ github.sha }}
+          name: ZKas Wallet Bridge Alert Installer v0.1.0
           files: |
             installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe
             installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe.sha256
@@ -103,3 +106,5 @@ jobs:
             Download `ZKas-Wallet-Bridge-Alert-Setup.exe`, run it as prompted, and the alert will install, start monitoring the ZKas Desktop Wallet bridge at `127.0.0.1:18114`, and open the local dashboard at `127.0.0.1:3042`.
 
             No separate Python installation is required.
+
+            This is an unofficial community tool and does not require seed phrases, private keys, or wallet spending permissions.
