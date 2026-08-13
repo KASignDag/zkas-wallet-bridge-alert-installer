@@ -47,7 +47,7 @@ jobs:
           )
           s = s.replace('"port": 3041', '"port": 3042')
           s = s.replace('http://127.0.0.1:3041', 'http://127.0.0.1:3042')
-          s = s.replace('ZKas Wallet Bridge Alert v0.1.0', 'ZKas Wallet Bridge Alert Installer v0.1.0')
+          s = s.replace('ZKas Wallet Bridge Alert v0.1.1', 'ZKas Wallet Bridge Alert Installer v0.1.1')
           p.write_text(s, encoding='utf-8')
           '@ | python -
 
@@ -85,26 +85,27 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ZKas-Wallet-Bridge-Alert-Installer
+          name: ZKas-Wallet-Bridge-Alert-Installer-v0.1.1
           path: |
             installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe
             installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe.sha256
 
-      - name: Publish v0.1.0 release
-        if: startsWith(github.ref, 'refs/tags/') || hashFiles('RELEASE_V0.1.0') != ''
+      - name: Publish v0.1.1 release
+        if: startsWith(github.ref, 'refs/tags/') || hashFiles('RELEASE_V0.1.1') != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.0' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.1' }}
           target_commitish: ${{ github.sha }}
-          name: ZKas Wallet Bridge Alert Installer v0.1.0
+          name: ZKas Wallet Bridge Alert Installer v0.1.1
           files: |
             installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe
             installer/output/ZKas-Wallet-Bridge-Alert-Setup.exe.sha256
           body: |
-            Plug-and-play Windows installer for ZKas Wallet Bridge Alert.
+            Plug-and-play Windows installer for ZKas Wallet Bridge Alert v0.1.1.
 
-            Download `ZKas-Wallet-Bridge-Alert-Setup.exe`, run it as prompted, and the alert will install, start monitoring the ZKas Desktop Wallet bridge at `127.0.0.1:18114`, and open the local dashboard at `127.0.0.1:3042`.
+            This release persists bridge outage state across PC/app restarts. If the alert sent a Bridge unreachable notification before a reboot or power loss, it still sends `✅ Bridge recovered` when the wallet bridge comes back.
+
+            Default wallet bridge: `127.0.0.1:18114`
+            Local alert dashboard: `127.0.0.1:3042`
 
             No separate Python installation is required.
-
-            This is an unofficial community tool and does not require seed phrases, private keys, or wallet spending permissions.
